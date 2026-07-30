@@ -51,7 +51,7 @@ def main(page: ft.Page):
     lbl_opX = ft.Text("", font_family="Segoe UI", size=13, color="#E1E1E6", weight=ft.FontWeight.BOLD)
     lbl_op2 = ft.Text("", font_family="Segoe UI", size=13, color="#E1E1E6", weight=ft.FontWeight.BOLD)
 
-    # Borde universal (Solución al error del panel)
+    # Borde universal
     borde_inicial = ft.Border(
         top=ft.BorderSide(1, "#2A2F3D"),
         bottom=ft.BorderSide(1, "#2A2F3D"),
@@ -137,7 +137,8 @@ def main(page: ft.Page):
 
             btn_guardar.disabled = False
             btn_guardar.bgcolor = col
-            btn_guardar.color = "#0B0E14" if es_surebet else "#FFFFFF"
+            # Actualizamos el color del texto del contenido del botón
+            btn_guardar.content.color = "#0B0E14" if es_surebet else "#FFFFFF"
 
             datos_operacion_actual["valido"] = True
             datos_operacion_actual["partido"] = nombre_partido[:23]
@@ -156,7 +157,7 @@ def main(page: ft.Page):
             )
             btn_guardar.disabled = True
             btn_guardar.bgcolor = "#2A2F3D"
-            btn_guardar.color = "#64748B"
+            btn_guardar.content.color = "#64748B"
         
         page.update()
 
@@ -167,25 +168,21 @@ def main(page: ft.Page):
             txt_log.value += nueva_linea
             btn_guardar.disabled = True
             btn_guardar.bgcolor = "#2A2F3D"
-            btn_guardar.color = "#64748B"
+            btn_guardar.content.color = "#64748B"
             page.update()
 
-    # Botones de Acción (Revisados detalladamente como ft.ElevatedButton)
-    btn_evaluar = ft.ElevatedButton(
-        text="⚡ EVALUAR MATRIZ DE APUESTAS",
-        style=ft.ButtonStyle(
-            bgcolor="#00E676", color="#0B0E14",
-            shape=ft.RoundedRectangleBorder(radius=8),
-            text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=13)
-        ),
+    # --- BOTONES CONFIGURADOS PARA LA VERSIÓN MÁS NUEVA DE FLET ---
+    btn_evaluar = ft.Button(
+        content=ft.Text("⚡ EVALUAR MATRIZ DE APUESTAS", color="#0B0E14", weight=ft.FontWeight.BOLD, size=13),
+        bgcolor="#00E676",
         height=45,
         on_click=calcular
     )
 
-    btn_guardar = ft.ElevatedButton(
-        text="📥 REGISTRAR OPERACIÓN EN BITÁCORA",
+    btn_guardar = ft.Button(
+        content=ft.Text("📥 REGISTRAR OPERACIÓN EN BITÁCORA", color="#64748B", weight=ft.FontWeight.BOLD, size=11),
         disabled=True,
-        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)),
+        bgcolor="#2A2F3D",
         height=35,
         on_click=registrar_log
     )
