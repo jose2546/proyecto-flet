@@ -1,163 +1,225 @@
-import tkinter as tk
-import customtkinter as ctk
-from tkinter import messagebox
+import flet as ft
 from datetime import datetime
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("green")
+def main(page: ft.Page):
+    # --- CONFIGURACIÓN DE LA PÁGINA ---
+    page.title = "SUREBET ANALYTICS PRO"
+    page.theme_mode = ft.ThemeMode.DARK
+    page.bgcolor = "#0B0E14"
+    page.scroll = ft.ScrollMode.AUTO
+    page.padding = 30
 
-class ArbitrajeApp(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        self.title("SUREBET ANALYTICS PRO")
-        self.geometry("850x880")
-        self.configure(fg_color="#0B0E14")
-        
-        # Forzar maximizado automático al abrir para garantizar espacio completo
-        self.after(0, lambda: self.state('zoomed'))
+    # Variables globales de control dentro de la app
+    datos_operacion_actual = {"valido": False, "partido": "", "inv": "", "pct": "", "neto": ""}
 
-        # Encabezado Compacto
-        ctk.CTkLabel(self, text="SUREBET ANALYTICS PRO", font=("Segoe UI", 22, "bold"), text_color="#00E676").pack(pady=(10,1))
-        ctk.CTkLabel(self, text="Consola profesional de cobertura de riesgo y registro de operaciones", font=("Segoe UI", 11), text_color="#64748B").pack(pady=(0,8))
+    # --- ELEMENTOS VISUALES / ENTRADAS ---
+    txt_partido = ft.TextField(
+        label="NOMBRE DEL ENFRENTAMIENTO / PARTIDO",
+        placeholder_text="Ej: Real Madrid vs Barcelona",
+        width=400,
+        border_color="#2A2F3D",
+        focused_border_color="#00E676"
+    )
 
-        # --- SECCIÓN: NOMBRE DEL ENFRENTAMIENTO / PARTIDO ---
-        f_partido = ctk.CTkFrame(self, fg_color="#151922", corner_radius=8)
-        f_partido.pack(pady=2, fill="x", padx=40)
-        ctk.CTkLabel(f_partido, text="NOMBRE DEL ENFRENTAMIENTO / PARTIDO:", font=("Segoe UI", 11, "bold")).pack(side="left", padx=15, pady=6)
-        self.txt_partido = ctk.CTkEntry(f_partido, font=("Segoe UI", 12), width=320, placeholder_text="Ej: Real Madrid vs Barcelona", fg_color="#0B0E14", text_color="#FFFFFF")
-        self.txt_partido.pack(side="right", padx=15, pady=6)
+    txt_presupuesto = ft.TextField(
+        label="CAPITAL TOTAL INVERSIÓN ($ COP)",
+        value="100000",
+        width=200,
+        text_align=ft.TextAlign.RIGHT,
+        border_color="#2A2F3D",
+        focused_border_color="#00E676",
+        text_style=ft.TextStyle(color="#00E676", weight=ft.FontWeight.BOLD)
+    )
 
-        # 1. Entrada de Capital
-        f_cap = ctk.CTkFrame(self, fg_color="#151922", corner_radius=8)
-        f_cap.pack(pady=2, fill="x", padx=40)
-        ctk.CTkLabel(f_cap, text="CAPITAL TOTAL INVERSIÓN ($ COP):", font=("Segoe UI", 11, "bold")).pack(side="left", padx=15, pady=6)
-        self.txt_presupuesto = ctk.CTkEntry(f_cap, font=("Segoe UI", 12, "bold"), width=150, justify="right", fg_color="#0B0E14", text_color="#00E676")
-        self.txt_presupuesto.insert(0, "100000")
-        self.txt_presupuesto.pack(side="right", padx=15, pady=6)
+    # Inputs para la cuadrícula de cuotas
+    txt_l = ft.TextField(value="2.10", width=100, text_align=ft.TextAlign.CENTER, border_color="#2A2F3D")
+    txt_cl = ft.TextField(value="BetPlay", width=150, border_color="#2A2F3D")
 
-        # 2. Switch de Estrategia
-        self.sw_var = ctk.StringVar(value="on")
-        self.sw = ctk.CTkSwitch(self, text="Incluir mercado de Empate (Estrategia 1X2)", command=self.conmutar, variable=self.sw_var, onvalue="on", offvalue="off", font=("Segoe UI", 11), progress_color="#00E676")
-        self.sw.pack(pady=4, anchor="w", padx=45)
+    txt_e = ft.TextField(value="3.40", width=100, text_align=ft.TextAlign.CENTER, border_color="#2A2F3D")
+    txt_ce = ft.TextField(value="BetPlay", width=150, border_color="#2A2F3D")
+    lbl_e_text = ft.Text("🔸 Cuota Empate (X):", width=180)
 
-        # 3. Cuadrícula de Cuotas
-        self.f_grid = ctk.CTkFrame(self, fg_color="#151922", corner_radius=8)
-        self.f_grid.pack(pady=2, fill="x", padx=40)
-        
-        self.txt_l, self.txt_cl = self.crear_fila("🔹 Cuota Gana Local (1):", "BetPlay", 1)
-        self.lbl_e, self.txt_e, self.txt_ce = self.crear_fila("🔸 Cuota Empate (X):", "BetPlay", 2, ret_todo=True)
-        self.txt_v, self.txt_cv = self.crear_fila("🔹 Cuota Visitante (2):", "BetPlay", 3)
+    txt_v = ft.TextField(value="2.50", width=100, text_align=ft.TextAlign.CENTER, border_color="#2A2F3D")
+    txt_cv = ft.TextField(value="BetPlay", width=150, border_color="#2A2F3D")
 
-        # 4. Botón Evaluar Matriz (Más compacto en altura)
-        ctk.CTkButton(self, text="⚡ EVALUAR MATRIZ DE APUESTAS", font=("Segoe UI", 12, "bold"), height=36, fg_color="#00E676", text_color="#0B0E14", hover_color="#00C853", command=self.calcular).pack(pady=6, fill="x", padx=40)
+    # Fila dinámica del empate
+    row_empate = ft.Row([lbl_e_text, txt_e, txt_ce], alignment=ft.MainAxisAlignment.START)
 
-        # 5. Panel de Reportes (Compactado en sus márgenes internos)
-        self.f_rep = ctk.CTkFrame(self, fg_color="#151922", corner_radius=8, border_width=1, border_color="#2A2F3D")
-        self.f_rep.pack(pady=2, fill="x", padx=40)
-        
-        self.lbl_st = ctk.CTkLabel(self.f_rep, text="SISTEMA LISTO: INGRESE LOS VALORES", font=("Segoe UI", 12, "bold"), text_color="#64748B")
-        self.lbl_st.pack(anchor="w", padx=20, pady=(8,2))
-        
-        self.lbl_op1 = ctk.CTkLabel(self.f_rep, text="", font=("Segoe UI", 12, "bold"), text_color="#E1E1E6")
-        self.lbl_op1.pack(anchor="w", padx=20, pady=1)
-        self.lbl_opX = ctk.CTkLabel(self.f_rep, text="", font=("Segoe UI", 12, "bold"), text_color="#E1E1E6")
-        self.lbl_opX.pack(anchor="w", padx=20, pady=1)
-        self.lbl_op2 = ctk.CTkLabel(self.f_rep, text="", font=("Segoe UI", 12, "bold"), text_color="#E1E1E6")
-        self.lbl_op2.pack(anchor="w", padx=20, pady=1)
+    # --- COMPONENTES DEL PANEL DE REPORTES ---
+    lbl_st = ft.Text("SISTEMA LISTO: INGRESE LOS VALORES", font_family="Segoe UI", size=13, weight=ft.FontWeight.BOLD, color="#64748B")
+    lbl_op1 = ft.Text("", font_family="Segoe UI", size=13, color="#E1E1E6", weight=ft.FontWeight.BOLD)
+    lbl_opX = ft.Text("", font_family="Segoe UI", size=13, color="#E1E1E6", weight=ft.FontWeight.BOLD)
+    lbl_op2 = ft.Text("", font_family="Segoe UI", size=13, color="#E1E1E6", weight=ft.FontWeight.BOLD)
 
-        self.btn_guardar = ctk.CTkButton(self.f_rep, text="📥 REGISTRAR OPERACIÓN EN BITÁCORA", font=("Segoe UI", 11, "bold"), height=26, fg_color="#2A2F3D", text_color="#FFFFFF", hover_color="#3E4457", state="disabled", command=self.registrar_log)
-        self.btn_guardar.pack(pady=8, padx=20, anchor="e")
+    # Contenedor del Reporte (Equivalente al CTkFrame de reportes)
+    panel_reporte = ft.Container(
+        content=ft.Column([
+            lbl_st,
+            lbl_op1,
+            lbl_opX,
+            lbl_op2,
+        ], spacing=5),
+        bgcolor="#151922",
+        padding=20,
+        border_radius=8,
+        border=ft.border.all(1, "#2A2F3D")
+    )
 
-        # 6. Historial / Bitácora de Operaciones (Ahora tiene prioridad de expansión vertical)
-        ctk.CTkLabel(self, text="📋 BITÁCORA HISTÓRICA DE OPERACIONES", font=("Segoe UI", 11, "bold"), text_color="#64748B").pack(pady=(6,2), anchor="w", padx=45)
-        
-        self.txt_log = ctk.CTkTextbox(self, font=("Consolas", 12), fg_color="#151922", border_color="#2A2F3D", border_width=1, text_color="#E1E1E6")
-        self.txt_log.pack(pady=(0,15), fill="both", expand=True, padx=40)
-        
-        self.txt_log.insert("0.0", f"{'FECHA/HORA':<15} | {'ENFRENTAMIENTO':<32} | {'INVERSIÓN':<12} | {'RETORNO %':<10} | {'GANANCIA NETO'}\n")
-        self.txt_log.insert("end", "-" * 95 + "\n")
-        self.txt_log.configure(state="disabled")
+    # Cuadro de Bitácora Histórica (Equivalente al CTkTextbox)
+    txt_log = ft.TextField(
+        multiline=True,
+        read_only=True,
+        min_lines=8,
+        max_lines=12,
+        text_style=ft.TextStyle(font_family="Consolas", size=12, color="#E1E1E6"),
+        bgcolor="#151922",
+        border_color="#2A2F3D"
+    )
+    
+    # Inicializar cabecera de la bitácora
+    txt_log.value = f"{'FECHA/HORA':<15} | {'ENFRENTAMIENTO':<25} | {'INVERSIÓN':<12} | {'RETORNO %':<10} | {'GANANCIA NETO'}\n" + "-" * 85 + "\n"
 
-        self.datos_operacion_actual = None
+    # --- FUNCIONES DE LÓGICA ---
+    def conmutar(e):
+        row_empate.visible = sw.value
+        if not sw.value:
+            lbl_opX.value = ""
+        page.update()
 
-    def crear_fila(self, texto, casa, fila, ret_todo=False):
-        lbl = ctk.CTkLabel(self.f_grid, text=texto, font=("Segoe UI", 11))
-        lbl.grid(row=fila, column=0, sticky="w", padx=15, pady=4)
-        txt = ctk.CTkEntry(self.f_grid, width=90, justify="center", fg_color="#0B0E14", font=("Segoe UI", 11, "bold"))
-        txt.grid(row=fila, column=1, pady=4, padx=10)
-        txt_c = ctk.CTkEntry(self.f_grid, width=120, justify="center", fg_color="#0B0E14", font=("Segoe UI", 11))
-        txt_c.insert(0, casa)
-        txt_c.grid(row=fila, column=2, pady=4, padx=10)
-        return (lbl, txt, txt_c) if ret_todo else (txt, txt_c)
-
-    def conmutar(self):
-        if self.sw_var.get() == "on":
-            self.lbl_e.grid()
-            self.txt_e.grid()
-            self.txt_ce.grid()
-        else:
-            self.lbl_e.grid_remove()
-            self.txt_e.grid_remove()
-            self.txt_ce.grid_remove()
-            self.lbl_opX.configure(text="")
-
-    def calcular(self):
+    def calcular(e):
         try:
-            pres, c_l, c_v = float(self.txt_presupuesto.get()), float(self.txt_l.get()), float(self.txt_v.get())
-            usa_e = (self.sw_var.get() == "on")
-            c_e = float(self.txt_e.get()) if usa_e else None
-            
-            nombre_partido = self.txt_partido.get().strip()
-            if not nombre_partido:
-                nombre_partido = "Partido General"
+            pres = float(txt_presupuesto.value)
+            c_l = float(txt_l.value)
+            c_v = float(txt_v.value)
+            usa_e = sw.value
+            c_e = float(txt_e.value) if usa_e else None
 
-            if pres <= 0 or c_l <= 1 or c_v <= 1 or (usa_e and c_e <= 1): raise ValueError
-            
-            ind = (1/c_l) + (1/c_e if usa_e else 0) + (1/c_v)
-            rent, neto = (1 - ind) * 100, (pres / ind) - pres
-            
+            nombre_partido = txt_partido.value.strip() if txt_partido.value.strip() else "Partido General"
+
+            if pres <= 0 or c_l <= 1 or c_v <= 1 or (usa_e and c_e <= 1):
+                raise ValueError
+
+            ind = (1 / c_l) + (1 / c_e if usa_e else 0) + (1 / c_v)
+            rent = (1 - ind) * 100
+            neto = (pres / ind) - pres
+
             es_surebet = ind < 1.0
             col = "#00E676" if es_surebet else "#FF5252"
-            
+
             txt_st = f"🔥 ARBITRAJE DETECTADO (+{round(rent,2)}%) | Retorno Neto: +${round(neto,2):,} COP" if es_surebet else f"❌ MERCADO CON PÉRDIDA ({round(rent,2)}%) | Retorno Neto: ${round(neto,2):,} COP"
-            self.f_rep.configure(border_color=col)
-            self.lbl_st.configure(text=txt_st, text_color=col)
             
-            casa_l = self.txt_cl.get().strip()
-            casa_v = self.txt_cv.get().strip()
-            casa_e = self.txt_ce.get().strip() if usa_e else ""
+            panel_reporte.border = ft.border.all(1, col)
+            lbl_st.value = txt_st
+            lbl_st.color = col
 
-            self.lbl_op1.configure(text=f"👉 Local (1)   : ${round(pres/(ind*c_l),2):,} COP en {casa_l}")
-            if usa_e: 
-                self.lbl_opX.configure(text=f"👉 Empate (X)  : ${round(pres/(ind*c_e),2):,} COP en {casa_e}")
+            casa_l = txt_cl.value.strip()
+            casa_v = txt_cv.value.strip()
+            casa_e = txt_ce.value.strip() if usa_e else ""
+
+            lbl_op1.value = f"👉 Local (1)   : ${round(pres/(ind*c_l),2):,} COP en {casa_l}"
+            if usa_e:
+                lbl_opX.value = f"👉 Empate (X)  : ${round(pres/(ind*c_e),2):,} COP en {casa_e}"
             else:
-                self.lbl_opX.configure(text="")
-            self.lbl_op2.configure(text=f"👉 Visitante (2): ${round(pres/(ind*c_v),2):,} COP en {casa_v}")
+                lbl_opX.value = ""
+            lbl_op2.value = f"👉 Visitante (2): ${round(pres/(ind*c_v),2):,} COP en {casa_v}"
 
-            self.btn_guardar.configure(state="normal", fg_color="#00E676" if es_surebet else "#FF5252", text_color="#0B0E14" if es_surebet else "#FFFFFF")
-            
-            self.datos_operacion_actual = {
-                "partido": nombre_partido[:30], 
-                "inv": f"${pres:,}",
-                "pct": f"+{round(rent,2)}%" if es_surebet else f"{round(rent,2)}%",
-                "neto": f"+${round(neto,2):,}" if es_surebet else f"${round(neto,2):,}"
-            }
+            btn_guardar.disabled = False
+            btn_guardar.bgcolor = col
+            btn_guardar.color = "#0B0E14" if es_surebet else "#FFFFFF"
+
+            # Guardar en memoria temporal
+            datos_operacion_actual["valido"] = True
+            datos_operacion_actual["partido"] = nombre_partido[:23]
+            datos_operacion_actual["inv"] = f"${int(pres):,}"
+            datos_operacion_actual["pct"] = f"+{round(rent,2)}%" if es_surebet else f"{round(rent,2)}%"
+            datos_operacion_actual["neto"] = f"+${round(neto,2):,}" if es_surebet else f"${round(neto,2):,}"
 
         except ValueError:
-            messagebox.showerror("Error", "Ingrese valores numéricos válidos mayores a 1.0.")
+            lbl_st.value = "⚠️ ERROR: VERIFIQUE QUE LAS CUOTAS SEAN MAYORES A 1 Y EL CAPITAL VÁLIDO"
+            lbl_st.color = "#FF5252"
+            panel_reporte.border = ft.border.all(1, "#FF5252")
+            btn_guardar.disabled = True
+            btn_guardar.bgcolor = "#2A2F3D"
+            btn_guardar.color = "#64748B"
+        
+        page.update()
 
-    def registrar_log(self):
-        if self.datos_operacion_actual:
+    def registrar_log(e):
+        if datos_operacion_actual["valido"]:
             ahora = datetime.now().strftime("%d/%m %H:%M")
-            d = self.datos_operacion_actual
+            nueva_linea = f"{ahora:<15} | {datos_operacion_actual['partido']:<25} | {datos_operacion_actual['inv']:<12} | {datos_operacion_actual['pct']:<10} | {datos_operacion_actual['neto']}\n"
+            txt_log.value += nueva_linea
+            btn_guardar.disabled = True
+            btn_guardar.bgcolor = "#2A2F3D"
+            btn_guardar.color = "#64748B"
+            page.update()
+
+    # Botones de Acción
+    btn_evaluar = ft.ElevatedButton(
+        text="⚡ EVALUAR MATRIZ DE APUESTAS",
+        style=ft.ButtonStyle(
+            bgcolor="#00E676", color="#0B0E14",
+            shape=ft.RoundedRectangleBorder(radius=8),
+            text_style=ft.TextStyle(weight=ft.FontWeight.BOLD, size=13)
+        ),
+        height=45,
+        on_click=calcular
+    )
+
+    btn_guardar = ft.ElevatedButton(
+        text="📥 REGISTRAR OPERACIÓN EN BITÁCORA",
+        disabled=True,
+        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)),
+        height=35,
+        on_click=registrar_log
+    )
+
+    sw = ft.Switch(
+        label="Incluir mercado de Empate (Estrategia 1X2)",
+        value=True,
+        active_color="#00E676",
+        on_change=conmutar
+    )
+
+    # --- DISEÑO Y ESTRUCTURA DE LA INTERFAZ ---
+    page.add(
+        ft.Column([
+            ft.Text("SUREBET ANALYTICS PRO", size=24, weight=ft.FontWeight.BOLD, color="#00E676"),
+            ft.Text("Consola profesional de cobertura de riesgo y registro de operaciones web", size=12, color="#64748B"),
+            ft.Divider(height=10, color="transparent"),
             
-            linea_log = f"{ahora:<15} | {d['partido']:<32} | {d['inv']:<12} | {d['pct']:<10} | {d['neto']}\n"
+            # Form de partido
+            ft.Container(
+                content=ft.Row([ft.Text("🔹 Partido:", width=100), txt_partido], alignment=ft.MainAxisAlignment.START),
+                bgcolor="#151922", padding=12, border_radius=8
+            ),
+            # Form de Inversión
+            ft.Container(
+                content=ft.Row([ft.Text("💰 Inversión:", width=100), txt_presupuesto], alignment=ft.MainAxisAlignment.START),
+                bgcolor="#151922", padding=12, border_radius=8
+            ),
             
-            self.txt_log.configure(state="normal")
-            self.txt_log.insert("end", linea_log)
-            self.txt_log.configure(state="disabled")
+            sw,
             
-            self.btn_guardar.configure(state="disabled", fg_color="#2A2F3D", text_color="#64748B")
+            # Form Matriz de Cuotas
+            ft.Container(
+                content=ft.Column([
+                    ft.Row([ft.Text("🔹 Cuota Gana Local (1):", width=180), txt_l, txt_cl]),
+                    row_empate,
+                    ft.Row([ft.Text("🔹 Cuota Visitante (2):", width=180), txt_v, txt_cv]),
+                ], spacing=10),
+                bgcolor="#151922", padding=15, border_radius=8
+            ),
+            
+            ft.Row([btn_evaluar], alignment=ft.MainAxisAlignment.CENTER),
+            
+            panel_reporte,
+            ft.Row([btn_guardar], alignment=ft.MainAxisAlignment.END),
+            
+            ft.Text("📋 BITÁCORA HISTÓRICA DE OPERACIONES", size=12, color="#64748B", weight=ft.FontWeight.BOLD),
+            txt_log
+        ], spacing=15)
+    )
 
 if __name__ == "__main__":
-    ArbitrajeApp().mainloop()
+    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8080)
