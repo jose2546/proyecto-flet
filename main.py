@@ -51,7 +51,15 @@ def main(page: ft.Page):
     lbl_opX = ft.Text("", font_family="Segoe UI", size=13, color="#E1E1E6", weight=ft.FontWeight.BOLD)
     lbl_op2 = ft.Text("", font_family="Segoe UI", size=13, color="#E1E1E6", weight=ft.FontWeight.BOLD)
 
-    # Contenedor del Reporte (Equivalente al CTkFrame de reportes)
+    # Borde universal (Solución al error del panel)
+    borde_inicial = ft.Border(
+        top=ft.BorderSide(1, "#2A2F3D"),
+        bottom=ft.BorderSide(1, "#2A2F3D"),
+        left=ft.BorderSide(1, "#2A2F3D"),
+        right=ft.BorderSide(1, "#2A2F3D")
+    )
+
+    # Contenedor del Reporte
     panel_reporte = ft.Container(
         content=ft.Column([
             lbl_st,
@@ -62,10 +70,10 @@ def main(page: ft.Page):
         bgcolor="#151922",
         padding=20,
         border_radius=8,
-        border=ft.border.all(1, "#2A2F3D")
+        border=borde_inicial
     )
 
-    # Cuadro de Bitácora Histórica (Equivalente al CTkTextbox)
+    # Cuadro de Bitácora Histórica
     txt_log = ft.TextField(
         multiline=True,
         read_only=True,
@@ -76,7 +84,6 @@ def main(page: ft.Page):
         border_color="#2A2F3D"
     )
     
-    # Inicializar cabecera de la bitácora
     txt_log.value = f"{'FECHA/HORA':<15} | {'ENFRENTAMIENTO':<25} | {'INVERSIÓN':<12} | {'RETORNO %':<10} | {'GANANCIA NETO'}\n" + "-" * 85 + "\n"
 
     # --- FUNCIONES DE LÓGICA ---
@@ -108,7 +115,12 @@ def main(page: ft.Page):
 
             txt_st = f"🔥 ARBITRAJE DETECTADO (+{round(rent,2)}%) | Retorno Neto: +${round(neto,2):,} COP" if es_surebet else f"❌ MERCADO CON PÉRDIDA ({round(rent,2)}%) | Retorno Neto: ${round(neto,2):,} COP"
             
-            panel_reporte.border = ft.border.all(1, col)
+            panel_reporte.border = ft.Border(
+                top=ft.BorderSide(1, col),
+                bottom=ft.BorderSide(1, col),
+                left=ft.BorderSide(1, col),
+                right=ft.BorderSide(1, col)
+            )
             lbl_st.value = txt_st
             lbl_st.color = col
 
@@ -127,7 +139,6 @@ def main(page: ft.Page):
             btn_guardar.bgcolor = col
             btn_guardar.color = "#0B0E14" if es_surebet else "#FFFFFF"
 
-            # Guardar en memoria temporal
             datos_operacion_actual["valido"] = True
             datos_operacion_actual["partido"] = nombre_partido[:23]
             datos_operacion_actual["inv"] = f"${int(pres):,}"
@@ -137,7 +148,12 @@ def main(page: ft.Page):
         except ValueError:
             lbl_st.value = "⚠️ ERROR: VERIFIQUE QUE LAS CUOTAS SEAN MAYORES A 1 Y EL CAPITAL VÁLIDO"
             lbl_st.color = "#FF5252"
-            panel_reporte.border = ft.border.all(1, "#FF5252")
+            panel_reporte.border = ft.Border(
+                top=ft.BorderSide(1, "#FF5252"),
+                bottom=ft.BorderSide(1, "#FF5252"),
+                left=ft.BorderSide(1, "#FF5252"),
+                right=ft.BorderSide(1, "#FF5252")
+            )
             btn_guardar.disabled = True
             btn_guardar.bgcolor = "#2A2F3D"
             btn_guardar.color = "#64748B"
@@ -188,12 +204,10 @@ def main(page: ft.Page):
             ft.Text("Consola profesional de cobertura de riesgo y registro de operaciones web", size=12, color="#64748B"),
             ft.Divider(height=10, color="transparent"),
             
-            # Form de partido
             ft.Container(
                 content=ft.Row([ft.Text("🔹 Partido:", width=100), txt_partido], alignment=ft.MainAxisAlignment.START),
                 bgcolor="#151922", padding=12, border_radius=8
             ),
-            # Form de Inversión
             ft.Container(
                 content=ft.Row([ft.Text("💰 Inversión:", width=100), txt_presupuesto], alignment=ft.MainAxisAlignment.START),
                 bgcolor="#151922", padding=12, border_radius=8
@@ -201,7 +215,6 @@ def main(page: ft.Page):
             
             sw,
             
-            # Form Matriz de Cuotas
             ft.Container(
                 content=ft.Column([
                     ft.Row([ft.Text("🔹 Cuota Gana Local (1):", width=180), txt_l, txt_cl]),
