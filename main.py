@@ -223,4 +223,4 @@ def main(page: ft.Page):
 
 # Configuración final para Render (Ejecución puramente web)
 if __name__ == "__main__":
-    ft.app(target=main, view=None, port=8080)
+    ft.app(target=main, port=8080)
