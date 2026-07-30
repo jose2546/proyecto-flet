@@ -15,4 +15,6 @@ COPY . .
 EXPOSE 8080
 
 # Comando oficial para arrancar Flet como una aplicación web en producción
-CMD ["flet", "run", "src/main.py", "--web", "--port", "8080"]
+CMD ["flet", "run", "main.py", "--web", "--port", "8080"]
+
+
