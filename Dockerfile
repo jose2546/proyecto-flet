@@ -2,6 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Desactiva por completo los módulos de escritorio para entornos en la nube
+ENV FLET_SERVER_ONLY=true
+
 RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -15,6 +18,4 @@ COPY . .
 EXPOSE 8080
 
 # Comando oficial para arrancar Flet como una aplicación web en producción
-CMD ["flet", "run", "main.py", "--web", "--port", "8080"]
-
-
+CMD ["python", "main.py"]
