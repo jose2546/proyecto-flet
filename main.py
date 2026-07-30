@@ -15,7 +15,7 @@ def main(page: ft.Page):
     # --- ELEMENTOS VISUALES / ENTRADAS ---
     txt_partido = ft.TextField(
         label="NOMBRE DEL ENFRENTAMIENTO / PARTIDO",
-        placeholder_text="Ej: Real Madrid vs Barcelona",
+        hint_text="Ej: Real Madrid vs Barcelona",
         width=400,
         border_color="#2A2F3D",
         focused_border_color="#00E676"
@@ -221,6 +221,5 @@ def main(page: ft.Page):
         ], spacing=15)
     )
 
-# Configuración final para Render (Ejecución puramente web)
 if __name__ == "__main__":
     ft.app(target=main, port=8080)
